@@ -1001,6 +1001,22 @@ namespace GraphicalDebugging
                     d = LoadRing(debugger, name, "coords_", false, traits);
                 else if (base_type == "boost::polygon::polygon_with_holes_data")
                     d = LoadPolygon(debugger, name, "self_", "holes_", true, "coords_", false, traits);
+                if (base_type == "geometrix::point")
+                    d = LoadPoint(debugger, name);
+                else if (base_type == "geometrix::segment")
+                    d = LoadSegment(debugger, name, "m_start", "m_end", false, traits);
+                else if (base_type == "geometrix::polygon")
+                    d = LoadRing(debugger, name, "", false, traits);
+                else if (base_type == "geometrix::polyline")
+                    d = LoadLinestring(debugger, name, false, traits);
+                else if (base_type == "std::vector")
+                {
+                    List<string> tparams = Util.Tparams(type);
+                    string firstType = tparams[0];
+                    base_type = Util.BaseType(firstType);
+                    if (base_type == "geometrix::point")
+                        d = LoadRing(debugger, name, "", false, traits);
+                }
 
                 if (d == null)
                     traits = null;
@@ -1079,10 +1095,16 @@ namespace GraphicalDebugging
         private static int LoadSize(Debugger debugger, string name)
         {
             // VS2015 vector
-            Expression expr_size = debugger.GetExpression(name + "._Mypair._Myval2._Mylast-" + name + "._Mypair._Myval2._Myfirst");
+            Expression expr_size = debugger.GetExpression(name + "._Mylast-" + name + "._Myfirst");
             if (expr_size.IsValidValue)
             {
                 int result = int.Parse(expr_size.Value);
+                return Math.Max(result, 0);
+            }
+            Expression expr_size2 = debugger.GetExpression(name + "._Mypair._Myval2._Mylast-" + name + "._Mypair._Myval2._Myfirst");
+            if (expr_size2.IsValidValue)
+            {
+                int result = int.Parse(expr_size2.Value);
                 return Math.Max(result, 0);
             }
             // VS2015 deque, list
