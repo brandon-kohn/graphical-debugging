@@ -64,6 +64,35 @@ namespace GraphicalDebugging
                 : base(x, y, z)
             { }
 
+            public double X
+            {
+                get { return coords[0]; }
+            }
+            
+            public double Y
+            {
+                get { return coords[1]; }
+            }
+
+            public static Point operator +(Point a, Point b)
+            {
+                return new Point(a.X + b.X, a.Y + b.Y);
+            }
+            public static Point operator -(Point a, Point b)
+            {
+                return new Point(a.X - b.X, a.Y - b.Y);
+            }
+
+            public static Point operator *(double d, Point v)
+            {
+                return new Point(d * v.X, d * v.Y);
+            }
+
+            public static Point operator -(Point v)
+            {
+                return new Point(-v.X, -v.Y);
+            }
+
             public void Draw(Geometry.Box box, Graphics graphics, Settings settings, Geometry.Traits traits)
             {
                 LocalCS cs = new LocalCS(box, graphics);
@@ -79,7 +108,7 @@ namespace GraphicalDebugging
                     drawer.DrawPeriodicPoint(cs, this, box, traits.Unit);
                 }
             }
-
+            
             public Geometry.Box Aabb { get {
                     return new Geometry.Box(this, this);
                 } }
@@ -547,6 +576,16 @@ namespace GraphicalDebugging
             return result;
         }
 
+        private static Box LoadAABB(Debugger debugger, string name, Geometry.Traits traits)
+        {
+            Point first_p = LoadPoint(debugger, name + ".m_low");
+            Point second_p = LoadPoint(debugger, name + ".m_high");
+
+            Box result = new Box(first_p, second_p);
+            result.Box_ = Geometry.Aabb(result.Min, result.Max, traits.Unit);
+            return result;
+        }
+
         private static Box LoadPolygonBox(Debugger debugger, string name)
         {
             Point first_p = LoadPoint(debugger, name + ".ranges_[0]"); // interval X
@@ -563,6 +602,18 @@ namespace GraphicalDebugging
         {
             Point first_p = LoadPoint(debugger, name + "." + first);
             Point second_p = LoadPoint(debugger, name + "." + second);
+
+            Segment result = new Segment(first_p, second_p);
+            if (calculateEnvelope)
+                result.Box = Geometry.Envelope(result, traits);
+            else
+                result.Box = Geometry.Aabb(result, traits);
+            return result;
+        }
+        private static Segment LoadVector(Debugger debugger, string name, bool calculateEnvelope, Geometry.Traits traits)
+        {
+            Point first_p = new Point(0,0);
+            Point second_p = LoadPoint(debugger, name);
 
             Segment result = new Segment(first_p, second_p);
             if (calculateEnvelope)
@@ -605,10 +656,56 @@ namespace GraphicalDebugging
             return result;
         }
 
+        private static Linestring LoadFixedLinestring(Debugger debugger, string name, bool calculateEnvelope, Geometry.Traits traits, int size)
+        {
+            Linestring result = new Linestring();
+            
+            for (int i = 0; i < size; ++i)
+            {
+                Point p = LoadPoint(debugger, name + "[" + i + "]");
+                result.Add(p);
+            }
+
+            if (calculateEnvelope)
+                result.Box = Geometry.Envelope(result, traits);
+            else
+                result.Box = Geometry.Aabb(result, traits);
+            return result;
+        }
+
+        private static Ring LoadOBB(Debugger debugger, string name, Geometry.Traits traits)
+        {
+            Point c = LoadPoint(debugger, name + ".m_center");
+            Point u = LoadPoint(debugger, name + ".m_u");
+            Point v = LoadPoint(debugger, name + ".m_v");
+            double uHalf = LoadValue(debugger, name + ".m_uHalfWidth");
+            double vHalf = LoadValue(debugger, name + ".m_vHalfWidth");
+            
+            Linestring result = new Linestring();
+            Point p0 = c - uHalf * u - vHalf * v;
+            result.Add(p0);
+            Point p1 = c + uHalf * u - vHalf * v;
+            result.Add(p1);
+            Point p2 = c + uHalf * u + vHalf * v;
+            result.Add(p2);
+            Point p3 = c - uHalf * u + vHalf * v;
+            result.Add(p3);
+
+            result.Box = Geometry.Aabb(result, traits);
+            return new Ring(result, result.Box);
+        }
+
         private static Ring LoadRing(Debugger debugger, string name, string member, bool calculateEnvelope, Geometry.Traits traits)
         {
             string name_suffix = member.Length > 0 ? "." + member : "";
             Linestring ls = LoadLinestring(debugger, name + name_suffix, calculateEnvelope, traits);
+            return new Ring(ls, ls.Box);
+        }
+
+        private static Ring LoadFixedRing(Debugger debugger, string name, string member, bool calculateEnvelope, Geometry.Traits traits, int size)
+        {
+            string name_suffix = member.Length > 0 ? "." + member : "";
+            Linestring ls = LoadFixedLinestring(debugger, name + name_suffix, calculateEnvelope, traits, size);
             return new Ring(ls, ls.Box);
         }
 
@@ -1001,15 +1098,35 @@ namespace GraphicalDebugging
                     d = LoadRing(debugger, name, "coords_", false, traits);
                 else if (base_type == "boost::polygon::polygon_with_holes_data")
                     d = LoadPolygon(debugger, name, "self_", "holes_", true, "coords_", false, traits);
+
+                //! Geometrix
                 if (base_type == "geometrix::point")
                     d = LoadPoint(debugger, name);
                 else if (base_type == "geometrix::segment")
                     d = LoadSegment(debugger, name, "m_start", "m_end", false, traits);
                 else if (base_type == "geometrix::polygon")
                     d = LoadRing(debugger, name, "", false, traits);
+                else if (base_type == "geometrix::rectangle")
+                    d = LoadFixedRing(debugger, name, "", false, traits, 4);
+                else if (base_type == "geometrix::oriented_bounding_box")
+                    d = LoadOBB(debugger, name, traits);
+                else if (base_type == "geometrix::axis_aligned_bounding_box")
+                    d = LoadAABB(debugger, name, traits);
                 else if (base_type == "geometrix::polyline")
                     d = LoadLinestring(debugger, name, false, traits);
+                else if (base_type == "geometrix::sphere")
+                    d = LoadNSphere(debugger, name, "m_center", "m_radius", false, traits);
+                else if (base_type == "geometrix::vector")
+                    d = LoadVector(debugger, name, false, traits);
                 else if (base_type == "std::vector")
+                {
+                    List<string> tparams = Util.Tparams(type);
+                    string firstType = tparams[0];
+                    base_type = Util.BaseType(firstType);
+                    if (base_type == "geometrix::point")
+                        d = LoadRing(debugger, name, "", false, traits);
+                }
+                else if (base_type == "std::array")
                 {
                     List<string> tparams = Util.Tparams(type);
                     string firstType = tparams[0];
@@ -1094,19 +1211,28 @@ namespace GraphicalDebugging
 
         private static int LoadSize(Debugger debugger, string name)
         {
-            // VS2015 vector
-            Expression expr_size = debugger.GetExpression(name + "._Mylast-" + name + "._Myfirst");
+            Expression expr_size = debugger.GetExpression(name + ".size()");
             if (expr_size.IsValidValue)
             {
                 int result = int.Parse(expr_size.Value);
                 return Math.Max(result, 0);
             }
-            Expression expr_size2 = debugger.GetExpression(name + "._Mypair._Myval2._Mylast-" + name + "._Mypair._Myval2._Myfirst");
-            if (expr_size2.IsValidValue)
+
+            // VS2015 vector
+            expr_size = debugger.GetExpression(name + "._Mylast-" + name + "._Myfirst");
+            if (expr_size.IsValidValue)
             {
-                int result = int.Parse(expr_size2.Value);
+                int result = int.Parse(expr_size.Value);
                 return Math.Max(result, 0);
             }
+
+            expr_size = debugger.GetExpression(name + "._Mypair._Myval2._Mylast-" + name + "._Mypair._Myval2._Myfirst");
+            if (expr_size.IsValidValue)
+            {
+                int result = int.Parse(expr_size.Value);
+                return Math.Max(result, 0);
+            }
+
             // VS2015 deque, list
             expr_size = debugger.GetExpression(name + "._Mypair._Myval2._Mysize");
             if (expr_size.IsValidValue)
