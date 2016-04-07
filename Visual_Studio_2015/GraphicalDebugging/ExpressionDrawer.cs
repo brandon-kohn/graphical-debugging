@@ -655,6 +655,38 @@ namespace GraphicalDebugging
                 result.Box = Geometry.Aabb(result, traits);
             return result;
         }
+        private static Multi<Segment> LoadMultiSegment(Debugger debugger, string name, string first, string second, bool calculateEnvelope, Geometry.Traits traits)
+        {
+            List<IDrawable> singles = new List<IDrawable>();
+            Geometry.Box box = null;
+
+            int size = LoadSize(debugger, name);
+
+            for (int i = 0; i < size; ++i)
+            {
+                Segment s = LoadSegment(debugger, name + "[" + i + "]", first, second, false, traits);
+                singles.Add(s);
+
+                // TODO: in general it's not necessary to create a box here
+                if (box == null)
+                    box = s.Box;
+                else
+                {
+                    if (calculateEnvelope)
+                        Geometry.Expand(box, s.Box, traits);
+                    else
+                        Geometry.Expand(box, s.Box);
+                }
+            }
+
+            if (box == null)
+            {
+                box = new Geometry.Box();
+                Geometry.AssignInverse(box);
+            }
+
+            return new Multi<Segment>(singles, box);
+        }
 
         private static Linestring LoadFixedLinestring(Debugger debugger, string name, bool calculateEnvelope, Geometry.Traits traits, int size)
         {
@@ -1125,6 +1157,8 @@ namespace GraphicalDebugging
                     base_type = Util.BaseType(firstType);
                     if (base_type == "geometrix::point")
                         d = LoadRing(debugger, name, "", false, traits);
+                    if (base_type == "geometrix::segment")
+                        d = LoadMultiSegment(debugger, name, "m_start", "m_end", false, traits);
                 }
                 else if (base_type == "std::array")
                 {
