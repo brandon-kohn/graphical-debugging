@@ -51,6 +51,7 @@
     <Compile Include="ClassScopeExpression.cs" />
     <Compile Include="Colors.cs" />
     <Compile Include="ExpressionDrawer.cs" />
+    <Compile Include="ExpressionLoader_geometrix.cs" />
     <Compile Include="ExpressionLoader_Boost.cs" />
     <Compile Include="ExpressionLoader_Std.cs" />
     <Compile Include="ExpressionLoader_UserDefined.cs" />

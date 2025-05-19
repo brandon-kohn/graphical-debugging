@@ -85,6 +85,14 @@ namespace GraphicalDebugging
             this.debuggerEvents.OnContextChanged += DebuggerEvents_OnContextChanged;
 
             loadersCpp = new Loaders();
+            
+            loadersCpp.Add(new GeometrixPoint.LoaderCreator());
+            loadersCpp.Add(new GeometrixSegment.LoaderCreator());
+            loadersCpp.Add(new GeometrixBox.LoaderCreator());
+            loadersCpp.Add(new GeometrixNSphere.LoaderCreator());
+            loadersCpp.Add(new GeometrixLinestring.LoaderCreator());
+            loadersCpp.Add(new GeometrixRing.LoaderCreator());
+            loadersCpp.Add(new GeometrixPolygon.LoaderCreator());
 
             loadersCpp.Add(new BGPoint.LoaderCreator());
             loadersCpp.Add(new BGPointXY.LoaderCreator());
