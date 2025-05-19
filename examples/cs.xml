@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GraphicalDebugging>
+
+  <Point Id="System.Windows.Point">
+    <Coordinates>
+      <X>_x</X>
+      <Y>_y</Y>
+    </Coordinates>
+  </Point>
+
+  <Point Id="System.Drawing.Point">
+    <Coordinates>
+      <X>x</X>
+      <Y>y</Y>
+    </Coordinates>
+  </Point>
+
+  <Point Id="System.Drawing.PointF">
+    <Coordinates>
+      <X>x</X>
+      <Y>y</Y>
+    </Coordinates>
+  </Point>
+
+  <!--
+  namespace WpfApp1
+  {
+    struct MyPoint
+    {
+      double x, y;
+    }
+  }
+  -->
+  <Point Id="WpfApp1.MyPoint">
+    <Coordinates>
+      <X>x</X>
+      <Y>y</Y>
+    </Coordinates>
+  </Point>
+
+  <!--
+  namespace WpfApp1
+  {
+    struct MyBox
+    {
+      MyPoint mi, ma;
+    }
+  }
+  -->
+  <Box Id="WpfApp1.MyBox">
+    <Points>
+      <Min>mi</Min>
+      <Max>ma</Max>
+    </Points>
+  </Box>
+
+  <!--
+  namespace WpfApp1
+  {
+    struct MyBox1
+    {
+      double left, bottom, right, top;
+    }
+  }
+  -->
+  <Box Id="WpfApp1.MyBox1" CoordinateSystem="Cartesian" Unit="None">
+    <Coordinates>
+      <MinX>left</MinX> <!-- or <Left> -->
+      <MinY>bottom</MinY> <!-- or <Bottom> -->
+      <MaxX>right</MaxX> <!-- or <Right> -->
+      <MaxY>top</MaxY> <!-- or <Top> -->
+    </Coordinates>
+  </Box>
+
+  <!--
+  namespace WpfApp1
+  {
+    struct MyBox2
+    {
+      double left, bottom, width, height;
+    }
+  }
+  -->
+  <Box Id="WpfApp1.MyBox2" CoordinateSystem="Cartesian" Unit="None">
+    <CoordinatesDimensions>
+      <MinX>left</MinX> <!-- or <Left> or <MaxX> or <Right> -->
+      <MinY>bottom</MinY> <!-- or <Bottom> or <MaxY> or <Top> -->
+      <Width>width</Width>
+      <Height>height</Height>
+    </CoordinatesDimensions>
+  </Box>
+
+  <!--
+  namespace WpfApp1
+  {
+    class MyLinestring
+    {
+      MyPoint[] points;
+    }
+  }
+  -->
+  <Linestring Id="WpfApp1.MyLinestring">
+    <Points>
+      <Container>
+        <Name>points</Name>
+      </Container>
+    </Points>
+  </Linestring>
+  
+  <!--
+  namespace WpfApp1
+  {
+    class MyLinestring2 : List<MyPoint>
+    { }
+  }
+  -->
+  <Linestring Id="WpfApp1.MyLinestring2">
+    <Points>
+      <Container>
+        <Name>(System.Collections.Generic.List&lt;WpfApp1.MyPoint&gt;)this</Name>
+      </Container>
+    </Points>
+  </Linestring>
+
+  <!--
+  namespace WpfApp1
+  {
+    class MyRing
+    {
+      List<MyPoint> points;
+    }
+  }
+  -->
+  <Ring Id="WpfApp1.MyRing">
+    <Points>
+      <Container>
+        <Name>points</Name>
+      </Container>
+    </Points>
+  </Ring>
+
+  <!--
+  struct MyPolygon
+  {
+    MyRing outer;
+    List<MyRing> inners;
+  };
+  -->
+  <Polygon Id="WpfApp1.MyPolygon">
+    <ExteriorRing>
+      <Name>outer</Name>
+    </ExteriorRing>
+    <InteriorRings>
+      <Container>
+        <Name>inners</Name>
+      </Container>
+      <!--Offset>0</Offset-->
+    </InteriorRings>
+  </Polygon>
+
+</GraphicalDebugging>
